@@ -1,0 +1,38 @@
+% Preambolo
+\documentclass[11pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english,italian]{babel}
+\usepackage{frontespizio}
+
+% Documento
+\begin{document}
+\frenchspacing
+
+% Frontespizio
+\begin{frontespizio}	\Istituzione{Università di Pisa}	\Logo[6cm]{logo}
+	\Dipartimento{Informatica}	\Corso[Laurea triennale]{Informatica}	\Annoaccademico{2013--2014}	\Titoletto{Tesi di laurea}	\Titolo{Implementazione di un sistema operativo \\ UNIX-like basato su microkernel}	\Candidato[452264]{Andrea Orrù}	\Relatore{Antonio Cisternino}\end{frontespizio}
+
+% Abstract
+\begin{abstract}
+	Il mio abstract.
+\end{abstract}
+
+% Indice
+\tableofcontents
+
+
+% Introduzione
+\chapter*{Introduzione}
+\addcontentsline{toc}{chapter}{Introduzione}
+	Questa è un'introduzione.
+
+
+% Capitoli
+\chapter{Kernel}
+	Questo è un capitolo sui kernel.
+	\section{Microkernel}
+		Questa è una sezione sui microkernel.
+
+
+\end{document}
