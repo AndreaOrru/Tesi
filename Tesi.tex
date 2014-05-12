@@ -1,21 +1,36 @@
 % Preambolo
-\documentclass[11pt,a4paper]{report}
+\documentclass[12pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english,italian]{babel}
-\usepackage{frontespizio}
+\usepackage[norules]{frontespizio}
 
 % Documento
 \begin{document}
 \frenchspacing
 
 % Frontespizio
-\begin{frontespizio}	\Istituzione{Università di Pisa}	\Logo[6cm]{logo}
-	\Dipartimento{Informatica}	\Corso[Laurea triennale]{Informatica}	\Annoaccademico{2013--2014}	\Titoletto{Tesi di laurea}	\Titolo{Implementazione di un sistema operativo \\ UNIX-like basato su microkernel}	\Candidato[452264]{Andrea Orrù}	\Relatore{Antonio Cisternino}\end{frontespizio}
+\begin{frontespizio}
+	\Istituzione{Università di Pisa}
+	\Logo[6cm]{logo}
+	\Dipartimento{Informatica}
+	\Corso[Laurea triennale]{Informatica}
+	\Annoaccademico{2013--2014}
+	\Titoletto{Tesi di laurea}
+	\Titolo{Implementazione di un sistema operativo \\ UNIX-like basato su microkernel}
+	\Candidato[452264]{Andrea Orrù}
+	\Relatore{Antonio Cisternino}
+	\Rientro{1.5cm}
+\end{frontespizio}
 
 % Abstract
+\renewcommand{\abstractname}{Abstract}
 \begin{abstract}
-	Il mio abstract.
+	In questa tesi presenteremo \emph{Utopia}, un sistema operativo \emph{UNIX-like} basato su \emph{micro-kernel}.
+	Partiremo da una presentazione generale dei sistemi operativi, descrivendo le motivazioni
+	alla base della loro esistenza, e le funzionalità che essi forniscono solitamente.
+	Vedremo poi come questo insieme di funzioni possa essere realizzato in vari modi.
+	Infine discuteremo le scelte implementative relative al caso particolare di Utopia.
 \end{abstract}
 
 % Indice
@@ -34,5 +49,15 @@
 	\section{Microkernel}
 		Questa è una sezione sui microkernel.
 
+
+% Bibliografia
+\begin{thebibliography}{}
+	\bibitem{Silberschatz}
+		Silberschatz A., Galvin P. B., Gagne G.,
+		\emph{Operating System Concepts}.
+		Wiley,
+		9th Edition,
+		2012.
+\end{thebibliography}
 
 \end{document}
