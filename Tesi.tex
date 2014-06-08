@@ -1,12 +1,18 @@
 % Preambolo
 \documentclass[12pt,a4paper]{report}
+
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english,italian]{babel}
 \usepackage[norules]{frontespizio}
+\usepackage{url}
+\usepackage{setspace}
+
+\newcommand{\vir}[1]{``#1''}
 
 % Documento
 \begin{document}
+\doublespacing
 \frenchspacing
 
 % Frontespizio
@@ -26,10 +32,10 @@
 % Abstract
 \renewcommand{\abstractname}{Abstract}
 \begin{abstract}
-	In questa tesi presenteremo \emph{Utopia}, un sistema operativo \emph{UNIX-like} basato su \emph{micro-kernel}.
+	In questa tesi presenteremo \emph{Utopia}, un sistema operativo \emph{UNIX-like} basato su \emph{microkernel}.
 	Partiremo da una presentazione generale dei sistemi operativi, descrivendo le motivazioni
 	alla base della loro esistenza, e le funzionalità che essi forniscono solitamente.
-	Vedremo poi come questo insieme di funzioni possa essere realizzato in vari modi.
+	Vedremo poi le varie forme in cui questo insieme di funzioni può essere realizzato.
 	Infine discuteremo le scelte implementative relative al caso particolare di Utopia.
 \end{abstract}
 
@@ -40,18 +46,77 @@
 % Introduzione
 \chapter*{Introduzione}
 \addcontentsline{toc}{chapter}{Introduzione}
-	Questa è un'introduzione.
+	Il ruolo del sistema operativo (\emph{SO}) è quello di gestire le risorse hardware del calcolatore, fornendo ai programmi
+	un'astrazione della macchina sulla quale vengono eseguiti. Il SO si pone dunque come intermediario fra applicazioni e
+	hardware della macchina, di solito incapsulando funzioni di I/O\footnote{Input/Output}, gestione della memoria etc.
+	in delle \emph{syscall}, e interrompendo liberamente (\emph{preemption}) l'esecuzione dei processi.
+	
+	Nel linguaggio comune si utilizza spesso la locuzione \emph{sistema operativo} comprendendo con questa definizione tutta
+	una serie di applicazioni e funzionalità accessorie come l'interfaccia (grafica o testuale) e le utilità di sistema.
+	Queste entità ricoprono però un altro ruolo: quello di intermediario fra gli utenti e il \vir{vero} SO.
+	Per questo motivo, nel seguito si parlerà di sistema operativo solo come interfaccia tra hardware e software.\\
+	
+	L'esistenza dei moderni sistemi operativi è giustificata da necessità di comodità, efficienza e sicurezza.
+	
+	Comodità, perché la presenza di una API\footnote{Application Programming Interface} unica e coerente per comunicare con
+	la grande varietà di hardware esistente libera lo sviluppatore di applicazioni dall'onere della programmazione a basso livello.
+	
+	Efficienza, perché consente di riempire i tempi morti della CPU in cui i programmi attendono i risultati delle operazioni di I/O,
+	alternando opportunamente l'esecuzione dei processi. Lo stesso meccanismo consente l'esecuzione concorrente di un
+	numero teoricamente illimitato di processi.
+	
+	Sicurezza, perché delegando la gestione della memoria al sistema operativo, ogni applicazione vive in un suo
+	\emph{virtual address space}\footnote{Spazio di indirizzamento virtuale. Ogni processo vede la memoria come se fosse
+	l'unico processo in esecuzione.} e non può essere influenzata da altri programmi malfunzionanti, o peggio maliziosi.\\
+	
+	In questa tesi è mostrato lo sviluppo di un sistema operativo multi-threading minimale ma sufficientemente evoluto
+	da comprendere i \emph{driver} per le periferiche di base e consentire il porting della libreria del C e di alcune applicazioni.
+	La struttura della tesi è la seguente:
 
 
 % Capitoli
-\chapter{Kernel}
-	Questo è un capitolo sui kernel.
-	\section{Microkernel}
-		Questa è una sezione sui microkernel.
+\chapter{Storia dei sistemi operativi}
+	Nei primi calcolatori, per svolgere il proprio compito ogni programma necessitava di propri driver per le periferiche.
+	Il crescente livello di complessità delle macchine e delle applicazioni ha man mano reso necessario lo sviluppo dei sistemi operativi.
+	\section{Batch processing}
+		Negli anni 50, \emph{mainframe} che occupavano intere stanze venivano programmati tramite interruttori su enormi pannelli di controllo.
+		Più avanti l'introduzione delle \emph{schede perforate} permise di disaccoppiare le fasi di sviluppo
+		ed esecuzione, ma soltanto un utente alla volta poteva usufruire della macchina e solo per il periodo di tempo assegnatogli.
+		Il calcolatore poteva eseguire soltanto un programma per volta, fino alla sua terminazione.
+		
+		Questi computer erano del tutto sprovvisti di sistemi operativi. In principio il codice per il controllo della macchina doveva
+		essere integrato in ciascun programma, ma a seguito dello sviluppo di \emph{assembler} e \emph{compilatori} divenne
+		possibile scrivere delle librerie contenenti funzionalità standard per le operazioni di I/O.
+		Questi set di funzioni possono essere considerati i primi antenati dei moderni SO.
+		
+		In seguito, con l'invenzione dei \emph{batch} di schede perforate, i computer divennero in grado di eseguire
+		code di \emph{job} in sequenza, automatizzandone il caricamento. Parallelamente, quelle che prima erano
+		solo collezioni di funzioni divennero dei \emph{monitor}, programmi avviati all'accensione della macchina e
+		residenti in background. Essi si occupavano di caricare, avviare, monitorare i job e riassegnare le risorse
+		hardware al termine di ciascuna esecuzione.
+		
+	\section{Time sharing}
+		Man mano che la potenza computazionale dei computer cresceva, diminuendo i tempi di esecuzione dei job, si faceva
+		percentualmente sempre più importante la durata dei tempi morti. Anche se l'introduzione del batch processing aveva
+		ridotto drasticamente i tempi di attesa fra un job e il successivo, essa non poteva far nulla per sfruttare gli intervalli
+		temporali in cui il programma era in attesa delle lente periferiche di I/O, come le stampanti.
+		
+		Per ottimizzare ulteriormente l'utilizzo delle risorse fu concepito il concetto di \emph{time sharing}: all'interno di
+		un intervallo di tempo, su una stessa CPU è possibile alternare l'esecuzione di più di un job, avendo cura di
+		salvare lo stato del processo in esecuzione per poi ripristinarlo (\emph{context switch}).
+		In questo modo, un job in attesa di un'operazione di I/O può essere sospeso per dare spazio a uno che
+		necessita invece di eseguire dei calcoli sulla CPU.
+		
+		La tecnica del context switch comporta un \emph{overhead} affatto trascurabile per i calcolatori dell'epoca.
+		Bisogna infatti attendere la fine del 1961 perché veda la luce CTSS\footnote{Compatible Time-Sharing System},
+		il primo sistema operativo ad implementare il time sharing.
 
 
 % Bibliografia
 \begin{thebibliography}{}
+	\bibitem{WIKI_OS}
+		Wikipedia, Operating system.
+		\emph{\url{http://en.wikipedia.org/wiki/Operating_system}}
 	\bibitem{Silberschatz}
 		Silberschatz A., Galvin P. B., Gagne G.,
 		\emph{Operating System Concepts}.
