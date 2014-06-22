@@ -79,7 +79,7 @@
 	Nel linguaggio comune si utilizza spesso la locuzione \emph{sistema operativo} comprendendo con questa definizione tutta
 	una serie di applicazioni e funzionalità accessorie come l'interfaccia (grafica o testuale) e le utilità di sistema.
 	Queste entità ricoprono però un altro ruolo: quello di intermediario fra gli utenti e il \vir{vero} SO.
-	Per questo motivo, nel seguito si parlerà di sistema operativo solo come interfaccia tra hardware e software.\\
+	Per questo motivo, nel seguito si parlerà di sistema operativo solo come interfaccia tra hardware e software. \\
 	
 	L'esistenza dei moderni sistemi operativi è giustificata da necessità di comodità, efficienza e sicurezza.
 	
@@ -91,11 +91,18 @@
 	
 	Sicurezza, perché delegando la gestione della memoria al sistema operativo, ogni applicazione vive in un suo
 	\emph{virtual address space}\footnote{Spazio di indirizzamento virtuale. Ogni processo vede la memoria come se fosse
-	l'unico processo in esecuzione.} e non può essere influenzata da altri programmi malfunzionanti, o peggio maliziosi.\\
+	l'unico processo in esecuzione.} e non può essere influenzata da altri programmi malfunzionanti, o peggio maliziosi. \\
 	
-	In questa tesi è mostrato lo sviluppo di un sistema operativo multi-threading minimale ma sufficientemente evoluto
-	da comprendere i \emph{driver} per le periferiche di base e consentire il porting della libreria del C e di alcune applicazioni.
+	In questa tesi è mostrato lo sviluppo di Utopia, un sistema operativo multi-threading minimale ma sufficientemente evoluto
+	da comprendere i \emph{driver} per le periferiche di base e consentire il porting della libreria del C e di alcune applicazioni. \\
+	
 	La struttura della tesi è la seguente:
+	
+	Il capitolo 1 fornisce una prospettiva storica dell'evoluzione dei sistemi operativi, ponendo l'accento sulle funzionalità
+	che si sono man mano imposte come necessarie. Il capitolo 2 riassume le caratteristiche salienti dell'architettura x86,
+	target del sistema operativo Utopia. Il capitolo 3 è dedicato alla struttura dei sistemi operativi e alle loro
+	componenti e responsabilità. Il capitolo 4 descrive scelte progettuali e implementazione di Utopia.
+	Il capitolo 5 trae delle conclusioni e individua possibili sviluppi futuri del progetto.
 
 
 % Capitoli
@@ -159,7 +166,7 @@
 		Esse presero il nome di \emph{minicomputer}. Alcuni dei calcolatori di maggior successo di questa categoria,
 		in particolare la serie PDP, furono prodotti dalla DEC.
 		
-		Fu proprio su e per queste macchine, le PDP-7 prima e la PDP-11 poi, che venne sviluppato \emph{UNIX}, uno
+		Fu proprio su e per queste macchine, le PDP-7 prima e la PDP-11 poi, che venne sviluppato \textbf{UNIX}, uno
 		dei sistemi operativi più innovativi e influenti della storia, i cui principi sono ancora oggi alla base di
 		molti dei più importanti OS odierni.
 		
@@ -169,8 +176,8 @@
 		una riscrittura in C che rese possibile portare UNIX su svariate altre architetture.
 
 		Alcune delle caratteristiche più significative sono l'impiego di un filesystem gerarchico, dei file come strumenti di
-		IPC\footnote{Inter-Process Communication} e la presenza di tante piccole utilità di sistema richiamabili da CLI
-		\footnote{Command Line Interface} e combinabili tramite \emph{pipe}.
+		IPC\footnote{Inter-Process Communication} e la presenza di tante piccole utilità di sistema richiamabili da CLI\footnote{Command Line Interface}
+		e combinabili tramite \emph{pipe}.
 		L'insieme di questi concetti prende il nome di \vir{filosofia UNIX}, descritta come \vir{l'idea che la potenza di un sistema
 		derivi più dalla relazione fra i programmi che da i programmi stessi} \cite{Kernighan}.
 		
@@ -229,26 +236,26 @@
 	L'obiettivo è di dare al lettore una comprensione dell'architettura sufficiente da poter apprezzare i dettagli implementativi
 	illustrati nei capitoli successivi.
 	
-	\section{Set di istruzioni e registri}
+	\section{Set di istruzioni e registri}		
 		L'architettura x86 consiste di un set di istruzioni di lunghezza variabile, con un'impronta prevalentemente
 		\emph{CISC}\footnote{Complex Instruction Set Computer} e una forte enfasi sulla retrocompatibilità \cite{WIKI_x86}.
 		Questo significa che il cuore dell'instruction set è a tutt'oggi quello dei vecchi processori a 16-bit.
 		
 		Per illustrare questo concetto è significativo l'esempio dei registri (si veda la figura~\ref{fig:gpr}).
-		Si consideri il registro AX; è possibile accedere rispettivamente ai suoi 8 bit alti e bassi tramite AH e AL.
+		Si consideri il registro \textbf{AX}; è possibile accedere rispettivamente ai suoi 8 bit alti e bassi tramite \textbf{AH} e \textbf{AL}.
 		
-		Analogamente, sui processori dal 386 in poi, aggiungendo il prefisso \textbf{E} (es. EAX) si accede al corrispondente
+		Analogamente, sui processori dal 386 in poi, aggiungendo il prefisso \textbf{E} (es. \textbf{EAX}) si accede al corrispondente
 		registro a 32-bit, ma è ancora possibile agire sui 16 bit bassi riferendosi a AX.
 		
-		\begin{figure}[t]
+		\begin{figure}[t!]
 		\centering
-		\includegraphics[scale=0.6]{img/gpr.png}
+		\includegraphics[scale=0.53]{img/gpr.png}
 		\caption{I registri \emph{general purpose} dell'architettura x86. \cite{Intel}\label{fig:gpr}}
 		\end{figure}
-
+		
 		\begin{figure}[b!]
 		\centering
-		\includegraphics[scale=0.5]{img/segment.png}
+		\includegraphics[scale=0.6]{img/segment.png}
 		\caption{Registri segmento. \cite{Intel}\label{fig:segment}}
 		\end{figure}
 
@@ -261,14 +268,14 @@
 			e un offset di 16 bit.
 		
 			In real mode il processore non fornisce alcun meccanismo di protezione della memoria, e il software può
-			accedere direttamente alle periferiche hardware e richiamare le routine del \emph{BIOS}\footnote{Basic Input/Output System:
+			accedere direttamente alle periferiche hardware e richiamare le routine del \textbf{BIOS}\footnote{Basic Input/Output System:
 			un insieme di routine software memorizzato in ROM, che fornisce una serie di funzioni di base per l'accesso all'hardware del computer.}
 			tramite degli \emph{interrupt software}.
 		
 		\subsection{Protected mode}
 			Inizializzando alcune strutture dati e modificando alcuni registri di controllo si può impostare il processore
 			in \emph{protected mode}. In questa modalità i registri segmento non indicano più un indirizzo assoluto,
-			ma un indice in una tabella detta \emph{GDT}\footnote{Global Descriptor Table}, che consente di definire
+			ma un indice in una tabella detta \textbf{GDT}\footnote{Global Descriptor Table}, che consente di definire
 			segmenti di 32-bit (4 GiB) e assegnare loro alcune proprietà.
 			
 			Fra queste, la più significativa è la possibilità di selezionare uno fra quattro \emph{protection ring} per la
@@ -294,21 +301,21 @@
 		
 		\begin{figure}[htbp]
 		\centering
-		\includegraphics[scale=0.8]{img/translation.png}
+		\includegraphics[scale=0.46]{img/translation.png}
 		\caption{Traduzione degli indirizzi virtuali in indirizzi fisici. \cite{AMD}\label{fig:translation}}
 		\end{figure}
 		
 		La figura~\ref{fig:translation} mostra il processo di traduzione degli indirizzi. Le page tables sono organizzate
 		in due livelli.
 		
-		Il primo livello è quello della \emph{Page Directory}, formata da 1024 \emph{Page Directory Entry} da 4 byte
+		Il primo livello è quello della \textbf{Page Directory}, formata da 1024 \textbf{Page Directory Entry} da 4 byte
 		ciascuna, per un totale di 4 KiB (la stessa dimensione di una pagina). Ognuna di queste entry, se presente, punta
 		a una \emph{Page Table}, le strutture del secondo livello.
 		
-		Analogamente, ogni Page Table è composta da 1024 \emph{Page Table Entry} di 32 bit. Un entry, se presente,
+		Analogamente, ogni Page Table è composta da 1024 \textbf{Page Table Entry} di 32 bit. Un entry, se presente,
 		punta all'indirizzo della pagina fisica a cui mappare l'indirizzo di memoria virtuale corrispondente alla entry.
 		
-		Inserendo l'indirizzo fisico della Page Directory nel registro di controllo CR3 si comunica all'MMU il layout
+		Inserendo l'indirizzo fisico della Page Directory nel registro di controllo \textbf{CR3} si comunica all'MMU il layout
 		dell'address space virtuale. In un sistema operativo multitasking in cui ogni processo risiede in uno spazio
 		di indirizzamento separato, il registro CR3 viene scritto ad ogni cambio di contesto fra processi.
 		
@@ -321,7 +328,7 @@
 			I primi 32 sono riservati per le \emph{eccezioni} e sono generati dalla CPU. Divisioni per zero e \emph{page fault}
 			fanno parte di questa categoria.
 			
-			Ci sono poi 16 IRQ, \emph{interrupt hardware} provocati dall'esterno e segnalati alla CPU dal PIC\footnote{Programmable Interrupt Controller}.
+			Ci sono poi 16 \textbf{IRQ}, \emph{interrupt hardware} provocati dall'esterno e segnalati alla CPU dal PIC\footnote{Programmable Interrupt Controller}.
 			L'IRQ 0 è generato dal timer, l'IRQ 1 dalla tastiera, e così via.
 			
 			Infine gli \emph{interrupt software} vengono sollevati dall'istruzione INT e sono solitamente utilizzati per richiedere l'attenzione del kernel;
@@ -340,12 +347,12 @@
 			\end{figure}
 			
 		\subsection{I/O}
-			Tramite le istruzioni IN e OUT è possibile accedere a 64 KiB di registri di I/O per comunicare con le periferiche esterne.
+			Tramite le istruzioni \textbf{IN} e \textbf{OUT} è possibile accedere a 64 KiB di registri di I/O per comunicare con le periferiche esterne.
 			Il codice eseguito in Ring 0 può accedere a tutti i registri hardware, il Ring 3 a nessuno, mentre i restanti anelli possono
 			essere configurati tramite alcuni campi di una struttura dati detta TSS\footnote{Task State Segment}.
 			
 			Alcune entità hardware utilizzano invece il cosiddetto \emph{memory mapped I/O}: ad esempio, la VRAM della scheda
-			video viene tipicamente mappata all'indirizzo 0xB8000 della memoria fisica principale.
+			video viene tipicamente mappata all'indirizzo \texttt{0xB8000} della memoria fisica principale.
 				
 \chapter{Struttura dei sistemi operativi}
 	In questo capitolo forniremo una descrizione dettagliata delle componenti e dell'organizzazione di un sistema operativo e
@@ -399,7 +406,7 @@
 		
 			Un kernel che include tutti i driver\footnote{Programmi che gestiscono l'interazione con le periferiche hardware.} e i servizi di sistema
 			nello stesso address space e con tutto il codice che gira in modalità supervisore viene detto \emph{monolitico}.
-			La progettazione e l'implementazione di un kernel monolitico è generalmente ritenuta la più semplice fra i vari modelli esistenti \cite{Thompson}.
+			La progettazione e l'implementazione di un kernel monolitico è generalmente ritenuta la più semplice fra i vari modelli esistenti \cite{DiBona}.
 			
 			In un sistema di questo tipo, qualsiasi funzione che non può essere implementata a livello di libreria fa parte
 			dell'unico eseguibile del kernel \cite{WIKI_Kernel}. Di riflesso, la modalità attraverso la quale le applicazioni
@@ -447,7 +454,7 @@
 			tramite uno o più meccanismi di IPC forniti dal microkernel risulta cruciale.
 			
 			I microkernel sono composti tipicamente da poche migliaia di righe di codice, con evidenti vantaggi
-			in termini di mantenibilità. A titolo di esempio, la correttezza del kernel \emph{seL4} è stata provata
+			in termini di mantenibilità. A titolo di esempio, la correttezza del kernel \textbf{seL4} è stata provata
 			formalmente \cite{Klein}.
 			Questo significa che un crash del nucleo del sistema è virtualmente impossibile. Inoltre, qualora
 			fosse uno dei server a crashare, rimarrebbe sempre la possibilità di riavviarlo senza compromettere
@@ -458,7 +465,7 @@
 				
 				Un sistema a nucleo minimo è inerentemente più lento di un monolitico. Ciò che in un monolitico
 				si ottiene con una semplice system call, e quindi con due soli \emph{mode switch}
-				(su x86: Ring 3 => Ring 0, Ring 0 => Ring 3) e senza cambiare address space, con un microkernel
+				(su x86: Ring 3 $\Rightarrow$ Ring 0, Ring 0 $\Rightarrow$ Ring 3) e senza cambiare address space, con un microkernel
 				diventa più complesso.
 				
 				Occorre infatti inviare un messaggio all'opportuno server tramite una delle chiamate di sistema
@@ -470,14 +477,41 @@
 				teorica, ma nella pratica ripristinarne lo stato può essere estremamente complicato \cite{OSDEV_Microkernel}.
 	
 	\section{Componenti e responsabilità del sistema}
+		\subsection{Gestione dei processi}
+			Un processo è un programma in esecuzione. È più del codice del programma (che rappresenta soltanto la
+			sezione \emph{text} della figura~\ref{fig:process}): comprende anche lo sezione \emph{data}, che contiene le variabili
+			globali, lo \emph{heap} che contiene le variabili allocate dinamicamente, e uno o più \emph{thread} di esecuzione.
+		
+			\begin{figure}[htbp]
+			\centering
+			\includegraphics[scale=0.7]{img/process.png}
+			\caption{Un processo caricato in memoria. \cite{Silberschatz}\label{fig:process}}
+			\end{figure}
+			
+			Come si vede dalla figura~\ref{fig:thread}, ciascun thread di uno stesso processo mantiene uno \emph{stack} e uno stato (registri generali e \emph{program counter})
+			separati, ma condivide lo stesso codice e le variabili globali.
+			Possono essere implementati sia a livello utente, e in tal caso il processo gestisce i molteplici thread al suo interno; oppure possono essere implementati
+			a livello kernel, e in quest'altro caso per il sistema operativo l'unità di esecuzione sono i singoli thread.
+						
+			\begin{figure}[htbp]
+			\centering
+			\includegraphics[scale=0.7]{img/thread.png}
+			\caption{Un'illustrazione del concetto di multithreading. \cite{Silberschatz}\label{fig:thread}}
+			\end{figure}
+
+			La componente del sistema operativo che si occupa di decidere quanto tempo allocare ad ogni processo o thread
+			è detta \emph{scheduler}.
+				
 		\subsection{Gestione della memoria}
+			Per poter eseguire più processi in maniera concorrente, è necessario che essi siano presenti in memoria
+			contemporaneamente. Per fare questo essi devono dunque condividere la memoria RAM.
+			
+			Pertanto il sistema operativo deve occuparsi di tener traccia di quali zone sono occupate e da quale
+			processo
+			
 			\subsubsection{Memoria fisica}
 			\subsubsection{Memoria virtuale}
-		
-		\subsection{Scheduling}
-			\subsubsection{Cambio di contesto}
-			\subsubsection{Algoritmi di scheduling}
-			
+					
 		\subsection{Comunicazione interprocesso}
 			\subsubsection{Sincrona vs asincrona}
 			\subsubsection{Memoria condivisa}
@@ -537,7 +571,7 @@
 			si è poi optato per rendere l'eseguibile un ELF\footnote{Executable and Linkable Format} compliant con lo standard Multiboot \cite{Multiboot}.
 			In questo modo il sistema può essere caricato da un bootloader come GRUB da qualsiasi tipo di supporto.
 			
-			Nell'header dell'eseguibile è specificato 0x100000 come indirizzo di caricamento richiesto per il kernel.
+			Nell'header dell'eseguibile è specificato \texttt{0x100000} come indirizzo di caricamento richiesto per il kernel.
 			
 		\subsection{Procedura di boot del sistema}			
 			Il codice nel listato~\ref{lst:main} è il primo nel microkernel vero e proprio a venire eseguito.
@@ -567,7 +601,7 @@
 			
 			\lstinputlisting[caption={Il gestore della memoria fisica.},label={lst:pmem}]{code/pmem.c}
 			
-			La funzione pmem\_init riceve come parametro la struttura dati passata dal bootloader.
+			La funzione \texttt{pmem\_init} riceve come parametro la struttura dati passata dal bootloader.
 			Al suo interno è presente una mappa della memoria fisica, dove sono indicate quali
 			zone di memoria sono disponibili per l'utilizzo. La mappa viene scorsa in un loop
 			e ogni frame di 4KiB considerato libero viene aggiunto allo stack.
@@ -585,12 +619,12 @@
 			
 			\lstinputlisting[caption={La funzione che inizializza la memoria virtuale.},label={lst:vmem_init}]{code/vmem_init.c}
 			
-			La funzione vmem\_init inizializza il gestore della memoria virtuale.
+			La funzione \texttt{vmem\_init} inizializza il gestore della memoria virtuale.
 			Alle righe 3-4 viene allocato e azzerato un frame per la Page Directory.
 			
 			La linea 6 mappa i primi 4 MiB di memoria fisica nei primi 4 MiB di memoria virtuale, e li imposta come \emph{globali}.
 			Questa è la zona di memoria dove risiede il microkernel e le sue strutture dati; sarà mappata allo stesso modo in tutti
-			gli spazi di indirizzamento, per questo si utilizza il flag PAGE\_GLOBAL, che indica alla MMU di non invalidare le voci
+			gli spazi di indirizzamento, per questo si utilizza il flag \texttt{PAGE\_GLOBAL}, che indica alla MMU di non invalidare le voci
 			corrispondenti nella TLB anche quando si cambia address space.
 			
 			La linea 7 effettua il mapping ricorsivo precedentemente accennato.
@@ -612,7 +646,7 @@
 			Dalla linea 14 alla linea 20 viene trattato il caso in cui la pagina fisica da mappare vada allocata.
 			Se la Page Table Entry è già presente (riga 16-17) si mantiene la pagina fisica corrente e si
 			resettano solo i flag; in caso contrario se ne alloca una. In entrambi i casi si imposta il flag custom
-			PAGE\_ALLOCATED per segnalare l'operazione.
+			\texttt{PAGE\_ALLOCATED} per segnalare l'operazione.
 			
 			Nelle righe 21-27 viene gestito il caso in cui si sia specificata una pagina fisica particolare;
 			in questo frangente, se la pagina virtuale era già mappata in un frame allocato, tale frame
@@ -627,7 +661,7 @@
 								
 				\lstinputlisting[caption={Codice per la gestione dei processi.},label={lst:process}]{code/process.c}
 			
-				Si analizzi la funzione process\_create. Le righe 16-17 mappano il PCB\footnote{Process Control Block}
+				Si analizzi la funzione \texttt{process\_create}. Le righe 16-17 mappano il PCB\footnote{Process Control Block}
 				in una zona di memoria in \emph{kernel space} accessibile in tutti gli spazi di indirizzamento.
 			
 				Alla linea 20 viene creato un nuovo address space \vir{vergine} con all'interno il solo kernel space e
@@ -635,12 +669,12 @@
 				dentro l'eseguibile e crea un thread che comincerà l'esecuzione dall'\emph{entry point} del programma.
 				
 			\subsubsection{Thread}
-				Un TCB\footnote{Thread Control Block} è grande 4 KiB, come una pagina fisica, per questioni di semplicità ed efficienza
+				Un \textbf{TCB}\footnote{Thread Control Block} è grande 4 KiB, come una pagina fisica, per questioni di semplicità ed efficienza
 				nell'allocazione.
 			
 				\lstinputlisting[caption={La struttura che descrive un thread.},label={lst:threadH}]{code/thread.h}
 				
-				Come si vede dal listato~\ref{lst:threadH}, la TCB è composta da due parti. La prima sezione (righe 3-16)
+				Come si vede dal listato~\ref{lst:threadH}, il TCB è composto da due parti. La prima sezione (righe 3-16)
 				contiene le varie proprietà del thread: ID globale, ID all'interno del processo, stato, informazioni sull'eventuale
 				stato di attesa, processo di appartenenza.
 				
@@ -651,7 +685,7 @@
 				
 				Ciò che accade è che al momento del passaggio da Ring 3 a Ring 0 a seguito dell'interruzione di un
 				thread, il processore seleziona come stack quello inserito nel TCB, vi salva lo stato corrente (nella
-				struttura Context, costruita ad-hoc) e poi esegue del codice in kernel mode continuando a utilizzare
+				struttura \texttt{Context}, costruita ad-hoc) e poi esegue del codice in kernel mode continuando a utilizzare
 				lo stesso stack. Terminata la gestione dell'interruzione, lo stato viene ripristinato.
 				
 				Si noti che avendo l'accortezza di cambiare il puntatore allo stack appena prima di ripristinare lo stato
@@ -670,7 +704,7 @@
 				La linea 24 inserisce nello stack un indirizzo di ritorno speciale, che viene catturato
 				dal page fault handler all'uscita del thread per garantirne la deallocazione \vir{pulita}.
 				
-				Le linee 26-28 allocano e mappano una pagina dedicata al TLS\footnote{Thread Local Storage},
+				Le linee 26-28 allocano e mappano una pagina dedicata al \textbf{TLS}\footnote{Thread Local Storage},
 				necessaria tra le altre cose per lo scambio di messaggi fra thread. Viene mappata sia in
 				kernel space (per permettere la copia dei messaggi tra spazi di indirizzamento differenti)
 				sia in user space (per permettere al thread di accedervi).
@@ -679,13 +713,13 @@
 				scheduler.
 				
 			\subsubsection{Scheduler}
-				Lo scheduler usa un semplice meccanismo Round Robin: mantiene una coda di thread
+				Lo scheduler usa un semplice meccanismo \emph{Round Robin}: mantiene una coda di thread
 				pronti e li esegue uno dopo l'altro per un certo intervallo di tempo, a meno di interruzioni
 				dovute a eventi esterni (attesa di invio/ricezione, interrupt hardware, eccezioni, syscall).
 				
 				\lstinputlisting[caption={Le parti principali dello scheduler.},label={lst:scheduler}]{code/scheduler.c}
 				
-				Nella funzione scheduler\_init viene mappata globalmente una pagina il cui unico scopo è
+				Nella funzione \texttt{scheduler\_init} viene mappata globalmente una pagina il cui unico scopo è
 				contenere un puntatore al TLS del thread corrente; in tal modo è esempre possibile per
 				un thread in esecuzione sapere dove si trova quest'area.
 				
@@ -693,11 +727,11 @@
 				ad ogni \emph{tick} il thread in esecuzione viene bloccato e lo scheduler seleziona il successivo.
 				
 				La funzione schedule non fa altro che rimuovere il primo elemento dalla lista, inserirlo in fondo
-				e chiamare la funzione switch_to per predisporre il cambio di contesto.
+				e chiamare la funzione switch\_to per predisporre il cambio di contesto.
 				Nel caso in cui il thread sia classificato come \emph{dying}, il suo TCB viene eliminato e si
 				ripete la procedura.
 				
-				La funzione switch\_to esegue un cambio di address space solo se strettamente necessario,
+				La funzione \texttt{switch\_to} esegue un cambio di address space solo se strettamente necessario,
 				ovvero se si sta passando ad eseguire il thread di un processo differente da quello corrente.
 				La riga 9 aggiorna il puntatore al TLS; le linee 10 e 11 aggiornano due strutture dati globali
 				che contengono rispettivamente l'indirizzo del \emph{kernel stack} associato al thread (si veda
@@ -706,7 +740,7 @@
 				lo stato del thread.
 					
 		\subsection{Gestione delle interruzioni}
-			Il codice delle Interrupt Service Routine (ISR) è assolutamente centrale nella struttura del sistema.
+			Il codice delle \emph{Interrupt Service Routine} (ISR) è assolutamente centrale nella struttura del sistema.
 			Scheduling, cambi di contesto e chiamate di sistema fanno affidamento sul corretto funzionamento
 			di queste poche ma importanti righe, scritte direttamente in assembly.
 			
@@ -720,14 +754,88 @@
 			che non lo prevedono. La linea 7 salva il numero del vettore dell'interrupt, mentre la linea 8 salva il contenuto
 			di tutti i registri \emph{general purpose}.
 			
+			Le linee 10-12 si occupano di selezionare i segmenti della GDT\footnote{Global Descriptor Table, si veda il capitolo
+			sull'architettura x86.} associati alla modalità supervisore.
+			
+			Le righe 14-16 sono necessarie solo per le eccezioni, per un motivo abbastanza sottile: un eccezione, infatti, è l'unica
+			interruzione che può avvenire quando si è in kernel mode: nell'architettura x86, quando si viene interrotti in modalità
+			supervisore non viene cambiato lo stack automaticamente, quindi non si sa precisamente dove è stato salvato il contesto.
+			Per questo motivo si aggiorna la variabile globale context con il puntatore allo stack corrente.
+			
+			La riga 24 viene assemblata nel caso in cui il vettore sia associato a un interrupt (non a una syscall); l'indice del vettore
+			viene utilizzato per indicizzare un array di puntatori alle funzioni di handling.
+			
+			Le linee 18-22 sono dedicate invece alla gestione delle syscall, associate all'interrupt software \texttt{0x80}.
+			L'interfaccia definita da Utopia per il passaggio dei parametri al kernel è la seguente: EAX contiene il codice della syscall,
+			ECX il primo parametro, EDX il secondo, EBX il terzo, EDI il quarto, ESI il quinto. Al ritorno della syscall EAX conterrà
+			il valore di ritorno.
+			
+			Lo standard per il passaggio dei parametri a una funzione nell'x86 prevede di utilizzare lo stack; ESI e EDI sono già
+			stati pushati alla riga 8, quindi vengono pushati anche EBX, EDX e ECX e viene chiamata la syscall corrispondente
+			usando EAX come indice. Infine il valore di ritorno viene reinserito all'interno del contesto salvato, così che possa
+			essere letto dall'applicazione.
+			
+			La riga 26 aggiorna il puntatore allo stack, leggendolo dalla variabile context. Si ricordi che tale variabile veniva
+			impostata dallo scheduler in caso di cambio di contesto. In questo modo l'epilogo (righe 40-42) effettuerà il
+			ripristino dello stato di un thread diverso, nel caso sia stato selezionato.
+			
+			Le linee 28-34 sono necessarie per segnalare al PIC\footnote{Programmable Interrupt Controller} l'avvenuta
+			gestione dell'interrupt hardware.
+			
 		\subsection{Comunicazione interprocesso}
-		
-		\subsection{Connessione fra libreria del C e sistema}
-
-\chapter{Sviluppi futuri}
-
+			La scelta principale da effettuare quando si parla di comunicazione interprocesso è se le primitive
+			da implementare debbano essere sincrone o asincrone.
+			Nel caso di una comunicazione asincrona (il mittente continua l'esecuzione dopo la send, senza attendere
+			la ricezione) sono necessari dei buffer all'interno del kernel per contenere i messaggi finché non vengono elaborati dal destinatario.
+			Inoltre è necessario effettuare due copie (mittente $\Rightarrow$ kernel $\Rightarrow$ destinatario).
+			Utilizzando delle primitive sincrone si eliminano entrambi questi requisiti: il messaggio può essere copiato
+			dall'address space del mittente a quello del destinatario quando quest'ultimo è pronto a riceverlo.
+			L4 utilizza questo modello \cite{Neider}.
+			
+			Riflettendo sulle interazioni più comuni che avvengono all'interno di un sistema a microkernel, si vede
+			che tipicamente i processi inviano richieste ai server e poi aspettano la risposta (à la RPC\footnote{Remote Procedure Call}).
+			Ha senso dunque fornire una singola primitiva che svolga (eventualmente) entrambe le fasi, invio e ricezione.
+					
+			\lstinputlisting[caption={La message box di un thread.},label={lst:ipcH}]{code/ipc.h}
+			
+			Ogni thread è fornito di una \emph{message box} nella quale inserisce i messaggi che vuole
+			inviare e dalla quale recupera i messaggi che gli arrivano. Può contenere fino a 64 \emph{registri
+			virtuali}. Questa struttura dati risiede nel TLS.
+					
+			\lstinputlisting[caption={Primitive di comunicazione interprocesso.},label={lst:ipc}]{code/ipc.c}
+			
+			La funzione \texttt{send\_receive} prende come parametri il TID del thread a cui inviare il messaggio
+			e il TID del thread da cui riceverne. Nel caso non si voglia effettuare una delle due fasi, si
+			passa il valore 0 come parametro. Se si vuole ricevere da qualsiasi thread, si usa -1.
+			
+			La fase di invio (linee 17-33) può svolgersi in due modi differenti.
+			
+			Se (linee 21-23) il destinatario non è in attesa di un messaggio dal mittente (o da chiunque), il mittente
+			viene bloccato (linee 26 e 28, a seconda che esso richieda o meno una risposta). Questo provoca la
+			rimozione del thread dalla lista pronti e l'inserimento nella coda dei thread in attesa del thread destinatario.
+			
+			In caso contrario viene effettuata la copia del messaggio (riga 31) e il thread destinatario, che era in attesa
+			di ricevere, viene sbloccato (riga 32).
+			
+			La fase di ricezione (linee 35-49) non avviene se nessun thread sta aspettando di inviare un messaggio al
+			thread corrente: in tal caso esso si mette in attesa (linea 48).
+			
+			Se invece la lista dei thread in attesa non è vuota (linea 37), viene effettuata la consegna del messaggio
+			che il thread in testa alla coda voleva inviare (linee 39-40). Tale thread viene poi sbloccato se desiderava
+			solo inviare (linee 42-43) o messo in attesa di ricevere se si aspetta anche una risposta (linee 44-45).
+			
+			La funzione \texttt{deliver} effettua la \vir{consegna} vera e propria del messaggio. Tramite la finestra sui TLS
+			presente in kernel mode, effettua l'aggiornamento dei metadati (righe 6-8) e la copia dei registri
+			virtuali (riga 10).
+					
+\chapter{Conclusioni e sviluppi futuri}
+	In questa tesi è stata descritta l'implementazione di Utopia, un sistema operativo costruito secondo il modello
+	a microkernel. Le ragioni della scelta di tale modello 
+	
 
 % Bibliografia
+\addcontentsline{toc}{chapter}{Bibliografia}
+
 \begin{thebibliography}{}
 	\bibitem{Silberschatz}
 		Silberschatz A., Galvin P. B., Gagne G.,
@@ -735,6 +843,18 @@
 		Wiley,
 		9th Edition,
 		2012.
+	\bibitem{Tanenbaum}
+		Tanenbaum A., Woodhull A.,
+		\emph{Operating Systems: Design and Implementation}.
+		Prentice Hall,
+		3rd Edition,
+		2006.
+	\bibitem{TanenbaumModern}
+		Tanenbaum A., Bos H.,
+		\emph{Modern Operating Systems}.
+		Prentice Hall,
+		4th Edition,
+		2014.
 	\bibitem{Kernighan}
 		Kernighan B., Pike R.,
 		\emph{The UNIX Programming Environment}.
@@ -743,21 +863,26 @@
 	\bibitem{Intel}
 		\emph{Intel 64 and IA-32 Architectures Software Developer’s Manual}.
 		Intel,
-		Febbraio 2014.
+		2014.
 	\bibitem{AMD}
 		\emph{AMD64 Architecture Programmer’s Manual Volume 2: System Programming}.
 		AMD,
-		Maggio 2013.
+		2013.
 	\bibitem{Klein}
+		Klein G., Elphinstone K., Heiser G., e altri,
 		\emph{seL4: Formal Verification of an OS Kernel}.
 		ACM,
-		Klein G., Elphinstone K., Heiser G., e altri.
-		Ottobre 2009.
+		2009.
 	\bibitem{Neider}
+		Neider R.,
 		Microkernel Construction Notes.
 		\emph{\url{http://i30www.ira.uka.de/~neider/edu/mkc/mkc.html}}
-		Neider R.,
-		Settembre 2008.
+		2008.
+	\bibitem{DiBona}
+		DiBona C., Ockman S.,
+		\emph{Open Sources: Voices from the Open Source Revolution}.
+		O'Reilly,
+		1999.
 	\bibitem{Newlib}
 		Newlib C library.
 		\emph{\url{http://sourceware.org/newlib/}}
