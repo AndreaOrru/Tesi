@@ -227,8 +227,31 @@
 			L'introduzione da parte di Intel dei processori 386, dotati di MMU\footnote{Memory Management Unit} e quindi capaci di fornire a
 			livello hardware meccanismi di protezione della memoria, aprì la strada alla realizzazione di sistemi operativi multitasking
 			fino ad allora confinati ai costosi mainframe.
-			...
-
+			
+			\subsubsection{Windows}
+				La Microsoft cominciò lo sviluppo di Windows NT nel 1989, che fu poi rilasciato nel 1993. Questo sistema non era però
+				progettato per essere eseguito su hardware poco potente; per questo motivo, parallelamente cominciò lo sviluppo della
+				serie di sistemi Windows 9x, la cui prima incarnazione vide la luce nel 1995.
+			
+				Mentre NT era stato progettato \emph{ex novo} per girare sulla nuova architettura, Windows 9x gettava ancora le sue basi su MS-DOS,
+				perciò non può essere considerato un sistema completamente a 32-bit.
+				Questo situazione di dualismo venne risolta nel 2001 con Windows XP, quando Microsoft giudicò i tempi
+				maturi per l'utilizzo della tecnologia NT nei suoi prodotti consumer.
+				
+				Correntemente, la famiglia di sistemi Windows la fa da padrone nei settori dei desktop e dei laptop.
+				
+			\subsubsection{GNU e Linux}
+				Il progetto GNU\footnote{GNU is Not Unix, un acronimo ricorsivo.} esisteva già dal 1983 grazie a Richard Stallman. Il suo obiettivo
+				era creare una versione libera e open source del sistema proprietario UNIX.
+				Il progetto ebbe un grande successo nel replicare le funzionalità di varie parti di UNIX, ma lo sviluppo del kernel (Hurd) presentava
+				delle difficoltà.
+				
+				Nel 1991 lo studente finlandese Linus Torvalds rilasciò la prima versione del kernel monolitico Linux, inizialmente scritto
+				da Torvalds per il suo 386. Grazie all'aiuto crescente di volontari su Internet, il progetto crebbe esponenzialmente e
+				nel giro di poco tempo venne unito alle componenti userspace di GNU per dar vita a un sistema operativo completo.
+				
+				Oggi Linux domina il settore dei supercomputer ed ha un ruolo da coprotagonista nei dispositivi mobile.
+			
 \chapter{L'architettura x86}
 	In questo capitolo daremo una descrizione sommaria dei processori Intel x86, largamente la più comune nei PC moderni.
 	Porremo l'accento in particolare sulle serie a 32-bit (dalla 386 alla 686).
@@ -356,7 +379,7 @@
 				
 \chapter{Struttura dei sistemi operativi}
 	In questo capitolo forniremo una descrizione dettagliata delle componenti e dell'organizzazione di un sistema operativo e
-	delle possibili soluzioni implementative. Illustreremo e metteremo poi a confronto due casi concreti, Linux e Windows.
+	delle possibili soluzioni implementative. % Illustreremo e metteremo poi a confronto due casi concreti, Linux e Windows.
 	
 	\section{Il rapporto fra hardware, kernel e applicazioni}
 		\begin{figure}[htbp]
@@ -506,20 +529,48 @@
 			Per poter eseguire più processi in maniera concorrente, è necessario che essi siano presenti in memoria
 			contemporaneamente. Per fare questo essi devono dunque condividere la memoria RAM.
 			
-			Pertanto il sistema operativo deve occuparsi di tener traccia di quali zone sono occupate e da quale
-			processo
+			Pertanto il sistema operativo deve occuparsi di tener traccia di quali zone sono occupate e da chi;
+			con la collaborazione dell'hardware si occupa anche di assicurare che un processo non possa accedere
+			alle aree di memoria di un altro processo (a meno che non sia specificatamente richiesto come forma di
+			comunicazione).
+			Questo si ottiene generalmente facendo uso di un meccanismo noto sotto il nome di \emph{memoria virtuale}.
+			In pratica gli indirizzi di memoria usati da un programma (indirizzi virtuali o logici) vengono mappati in indirizzi
+			fisici della memoria del computer. Il risultato è che ogni processo risiede in un suo spazio di indirizzamento separato.
 			
-			\subsubsection{Memoria fisica}
-			\subsubsection{Memoria virtuale}
-					
+			Con questo sistema si elimina anche il problema della frammentazione della memoria fisica;
+			in generale infatti zone di memoria fisica non contigue possono essere mappate in maniera
+			contigua in memoria virtuale.
+			
+			Nella maggior parte dei sistemi operativi che fanno uso della memoria virtuale, il kernel viene mappato in
+			ogni address space, in modo tale che possa essere richiamato senza invalidare le tabelle di rilocazione
+			della MMU.
+								
 		\subsection{Comunicazione interprocesso}
-			\subsubsection{Sincrona vs asincrona}
-			\subsubsection{Memoria condivisa}
+			Come si è visto, per ragioni di sicurezza ogni processo vive in un address space separato e non
+			può influenzare direttamente gli altri processi.
+			Nonostante questo sono numerosi i casi in cui dei programmi debbano cooperare per risolvere
+			un problema o effettuare una computazione. Esistono dunque delle primitive di IPC\footnote{Inter Process Communication}
+			il cui scopo è sopperire a questa limitazione.
+					
+			Le modalità attraverso le quali due o più processi possono comunicare sono numerose. In questa sede
+			ci concentreremo sullo scambio di messaggi.
 	
-	\section{Linux}
-	
-	\section{Windows}
-
+			Il passaggio di messaggi permette ai processi di comunicare e sincronizzare le proprie
+			azioni senza condividere lo stesso address space.
+			Un meccanismo di questo tipo prevede almeno due operazioni:
+			\texttt{send(message)} e \texttt{receive(message)}.
+			
+			Esistono diverse possibilità di implementazione per queste due primitive. Lo scambio di messaggi può
+			essere \emph{bloccante} (sincrono) o \emph{non bloccante} (asincrono).
+			\begin{itemize}
+				\item \texttt{send} bloccante: il mittente viene bloccato finché il messaggio non viene ricevuto dal destinatario.
+				\item \texttt{send} non bloccante: il mittente invia il messaggio e riprende le operazioni.
+				\item \texttt{receive} bloccante: il destinatario si blocca finché non c'è un messaggio disponibile.
+				\item \texttt{receive} non bloccante: il destinatario ottiene un messaggio valido o NULL.
+			\end{itemize}
+			Sono possibili varie combinazioni di \texttt{send} e \texttt{receive}. Quando entrambe sono bloccanti,
+			si ha un \emph{rendezvous} fra mittente e destinatario. \cite{Silberschatz}
+				
 \chapter{L'implementazione di Utopia}
 	Questo capitolo è dedicato alla descrizione dell'implementazione di Utopia, un sistema operativo
 	minimale basato su microkernel scritto in C e Assembly x86.
@@ -830,9 +881,41 @@
 					
 \chapter{Conclusioni e sviluppi futuri}
 	In questa tesi è stata descritta l'implementazione di Utopia, un sistema operativo costruito secondo il modello
-	a microkernel. Le ragioni della scelta di tale modello 
+	a microkernel. Le ragioni della scelta di tale modello sono legati alla pura sperimentazione.
+	Nonostante la comunità accademica abbia spesso mostrato una forte propensione per i microkernel, la maggior parte dei
+	sistemi operativi mainstream sono monolitici o ibridi.
+	Personalmente sono stato attratto dall'eleganza e dal minimalismo insito nel paradigma del sistema a nucleo minimale,
+	che oltretutto presenta scelte di design a mio modo di vedere più interessanti.
 	
+	In teoria, i microkernel promettono dei vantaggi in termini di sicurezza, stabilità e mantenibilità. Nella pratica il compromesso
+	richiesto in termini di performance si è dimostrato fino ad ora poco conveniente.
+	Dall'altro lato, i monolitici hanno fatto passi da gigante dal punto di vista dell'organizzazione del codice e questo ha permesso
+	loro di limare molti dei difetti intrinseci nel loro design. La divisione delle funzionalità, portata alle estreme conseguenze nei
+	microkernel, viene oggi replicata a livello di ingegneria del software nei moderni kernel monolitici, tanto che sarebbe più corretto
+	definirli degli ibridi.
+	Essi presentano una strutturazione a livelli delle funzionalità: il nucleo più interno fornisce di fatto le stesse funzionalità di un
+	microkernel, e il resto è costruito sopra \vir{a cipolla}. Non vi è separazione degli address space con i driver, quindi un errore
+	in uno di essi può comunque bloccare l'intero sistema, ma d'altronde anche nei sistemi microkernel è molto difficile ripristinare
+	lo stato del driver una volta che il suo processo è crashato.
 
+	Anche senza tener conto dei costi in termini di performance, i vantaggi dei microkernel non vengono comunque automaticamente
+	dalla sua architettura; sono necessarie attente e complesse considerazioni di design nient'affatto evidenti a priori.
+	Dovendo replicare lo stesso insieme di funzionalità presenti in Utopia servendosi di un kernel monolitico, si può affermare con
+	sufficiente grado di certezza che ciò risulterebbe più semplice, almeno nei primi stadi di sviluppo. Oltre una certa
+	soglia di complessità del sistema queste difficoltà potrebbero però essere sorpassate dai vantaggi.
+	
+	\subsubsection{Sviluppi futuri}
+		Gli sviluppi futuri del sistema vanno in due direzioni: da una parte si cercherà di aumentare la compatibilità coi sistemi
+		POSIX implementando l'intero set di syscall previsto dalla libreria del C \emph{Newlib}, aprendo così la strada per il porting
+		di tutte le applicazioni opensource disponibili per i sistemi UNIX-like.
+		Allo stato attuale questo significa principalmente realizzare un server VFS che fornisca ai processi i classici meccanismi
+		di astrazione sui file (open/read/write/close).
+		
+		Dall'altro lato si cercherà di implementare altri driver: uno più evoluto per la scheda video, che consenta per esempio di portare (o scrivere \emph{ex novo})
+		un'interfaccia grafica per il sistema. Un altro obiettivo, a mio giudizio più importante, è un driver per la scheda di rete e uno stack TCP/IP funzionante
+		per connettere il sistema con l'esterno.
+				
+	
 % Bibliografia
 \addcontentsline{toc}{chapter}{Bibliografia}
 
